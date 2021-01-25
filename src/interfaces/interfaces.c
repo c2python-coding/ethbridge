@@ -20,7 +20,7 @@ typedef struct __InterfaceSpec
 #ifdef OSX
 struct  __attribute__((__packed__)) sockaddr_ll 
 {
-    u_char dummy[9];
+    u_char dummy[11];
     u_char sll_addr[6];
 };
 
@@ -49,7 +49,7 @@ static void get_interface_addresses(pcap_addr_t *addressIterator,
             memcpy(target->ip, &ipAddress->sin_addr, 4);
         }
         addressIterator = addressIterator->next;
-        if ((long)target->mac != 0l && (long)target->ip != 0l)
+        if (*(u_int*)target->mac != 0l && *(u_int*)target->ip != 0l)
         {
             break;
         }
@@ -72,6 +72,7 @@ static InterfaceSpec *get_all_interfaces()
     while (deviceIterator)
     {
         specIterator = (InterfaceSpec *)calloc(1, sizeof(InterfaceSpec));
+        memset(specIterator,0,sizeof(InterfaceSpec));
         if (previous)
         {
             previous->next = specIterator;
