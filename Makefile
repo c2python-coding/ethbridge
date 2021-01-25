@@ -1,10 +1,20 @@
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
 TARGET_EXEC := ethbridge
 OS := $(shell uname)
+LINUX_OS := Linux
+MAC_OS := Darwin
 
 CC = gcc
-CFLAGS= -Wall -Werror -MD -MMD -g
+CFLAGS= -Wall -Werror -MD -g 
 LDFLAGS= -lpcap
+
+ifeq ($(OS),$(LINUX_OS))
+    CFLAGS += -MMD
+else ifeq ($(OS),$(MAC_OS))
+	CFLAGS += -DOSX
+else
+    $(error $(OS) is not supported)
+endif
 
 BUILD_DIR := ./build
 

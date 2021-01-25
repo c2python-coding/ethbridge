@@ -110,9 +110,9 @@ void setup_forward_connection(ForwardFileDescriptors *forward_info, char *captur
     struct sockaddr_in address;
     struct sockaddr_in comm_address;
     u_int address_size = sizeof(address);
-    int socket_fd;
+    int socket_fd =- 1;
     int flags;
-    int comm_socket;
+    int comm_socket =- 1;
     int option;
 
 

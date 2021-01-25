@@ -25,6 +25,13 @@ No windows support is currently planned.
 
 The software uses libpcap to send and recieve raw ethernet packets. In the ethernet header, the protocol for these packets  (which would normally be ETH_P_IP or `0x0800` for IP packets) is set to 0xffff, which is not assigned to any protocol currently. Together with a filter on the mac address of the other end (specified in command line options) forms a bridge that passes data back and forth, datagram style without any additional states or checks or security (those are left to the attaching protocols to implement). 
 
+## Building
+
+Run the make command. Executable created will be  `./build/ethbridge` 
+
+```sh 
+make
+```
 
 ## Usage
 

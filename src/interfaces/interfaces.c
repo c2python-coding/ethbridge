@@ -1,6 +1,5 @@
 #include "interfaces.h"
 #include "../utils/errorutils.h"
-#include <linux/if_packet.h>
 #include <netinet/in.h>
 #include <pcap.h>
 #include <pcap/pcap.h>
@@ -18,6 +17,20 @@ typedef struct __InterfaceSpec
 
 } InterfaceSpec;
 
+#ifdef OSX
+struct  __attribute__((__packed__)) sockaddr_ll 
+{
+    u_char dummy[9];
+    u_char sll_addr[6];
+};
+
+#define AF_PACKET 18
+
+#else
+
+#include <linux/if_packet.h>
+
+#endif
 static void get_interface_addresses(pcap_addr_t *addressIterator,
                                     InterfaceSpec *target)
 {
@@ -42,6 +55,25 @@ static void get_interface_addresses(pcap_addr_t *addressIterator,
         }
     }
 }
+
+// #include "../utils/easyprint.h"
+// static void get_interface_addresses(pcap_addr_t *addressIterator, InterfaceSpec *target)
+// {
+//     while (addressIterator)
+//     {
+//         print("Adress Family",(int)addressIterator->addr->sa_family);
+//         for (int i = 0;i<14;++i)
+//         {
+//             printf("%u ",(u_int)(u_char)addressIterator->addr->sa_data[i]);
+//         }
+//         print(" ");
+//         print(AF_INET);
+
+//         addressIterator = addressIterator->next;
+//     }
+//     exit(1);
+// }
+
 
 static InterfaceSpec *get_all_interfaces()
 {

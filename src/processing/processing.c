@@ -11,10 +11,14 @@
 
 #define CUSTOM_ETHER_PROTOCOL 0xffff
 
+#ifdef OSX
+#define ETH_DATA_LEN 1500
+#endif
+
 static u_char packet_buffer[ETHER_HDR_LEN+ETH_DATA_LEN];
 static u_char * const data_ptr= packet_buffer+ETHER_HDR_LEN;
 
-typedef  struct ether_header* ether_header_t;
+typedef  struct ether_header* ether_header_ptr;
 
 static ForwardFileDescriptors * fds;
 
@@ -27,7 +31,7 @@ static void ctrl_c_handler(int sitnalnum)
 
 static void prepare_response_buffer(CaptureSpec *interface)
 {
-    ether_header_t packet_header = (ether_header_t)packet_buffer;
+    ether_header_ptr packet_header = (ether_header_ptr)packet_buffer;
     memcpy(packet_header->ether_dhost, interface->dest_mac,6);
     memcpy(packet_header->ether_shost,interface->own_mac,6);
     packet_header->ether_type=(unsigned short)CUSTOM_ETHER_PROTOCOL;
@@ -37,7 +41,7 @@ static void prepare_response_buffer(CaptureSpec *interface)
 static void packet_callback(u_char *user, const struct pcap_pkthdr *h,
                      const u_char *bytes)
 {
-    ether_header_t packet_header = (ether_header_t)bytes;
+    ether_header_ptr packet_header = (ether_header_ptr)bytes;
     const u_char* data = bytes + sizeof(struct ether_header);
     int data_len = (h->caplen)-(sizeof(struct ether_header));
     if (packet_header->ether_type == 0xffff) //TODO move this into BPF
