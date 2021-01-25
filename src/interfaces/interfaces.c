@@ -81,7 +81,6 @@ static InterfaceSpec *get_all_interfaces()
         {
             root = specIterator;
         }
-        memset(specIterator->name, 0, 14);
         strncpy(specIterator->name, deviceIterator->name, 13);
         get_interface_addresses(deviceIterator->addresses, specIterator);
         deviceIterator = deviceIterator->next;
