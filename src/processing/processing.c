@@ -53,7 +53,7 @@ static void packet_callback(u_char *user, const struct pcap_pkthdr *h,
 
 void start_loop(CaptureSpec *capture_interface, ForwardFileDescriptors* forward_fds)
 {
-    int num_bytes_stdin;
+    int num_bytes_in;
     fds = forward_fds;
     prepare_response_buffer(capture_interface);
     struct sigaction ctrlc_action;
@@ -63,10 +63,10 @@ void start_loop(CaptureSpec *capture_interface, ForwardFileDescriptors* forward_
     fprintf(stderr, "=>Started\n");
     while (contin)
     {
-        num_bytes_stdin = read(fds->read_fd,data_ptr,ETH_DATA_LEN);
-        if (num_bytes_stdin > 0)
+        num_bytes_in = read(fds->read_fd, data_ptr, ETH_DATA_LEN);
+        if (num_bytes_in > 0)
         {
-            pcap_inject(capture_interface->capture_handle, packet_buffer, ETHER_HDR_LEN+num_bytes_stdin);
+            pcap_inject(capture_interface->capture_handle, packet_buffer, ETHER_HDR_LEN + num_bytes_in);
         }
         pcap_dispatch(capture_interface->capture_handle, 0, &packet_callback, NULL);
     }

@@ -56,25 +56,6 @@ static void get_interface_addresses(pcap_addr_t *addressIterator,
     }
 }
 
-// #include "../utils/easyprint.h"
-// static void get_interface_addresses(pcap_addr_t *addressIterator, InterfaceSpec *target)
-// {
-//     while (addressIterator)
-//     {
-//         print("Adress Family",(int)addressIterator->addr->sa_family);
-//         for (int i = 0;i<14;++i)
-//         {
-//             printf("%u ",(u_int)(u_char)addressIterator->addr->sa_data[i]);
-//         }
-//         print(" ");
-//         print(AF_INET);
-
-//         addressIterator = addressIterator->next;
-//     }
-//     exit(1);
-// }
-
-
 static InterfaceSpec *get_all_interfaces()
 {
     InterfaceSpec *root = NULL;
