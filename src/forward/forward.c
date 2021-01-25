@@ -1,7 +1,6 @@
 #include "forward.h"
 #include "../utils/errorutils.h"
 #include <arpa/inet.h>
-#include <asm-generic/socket.h>
 #include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
