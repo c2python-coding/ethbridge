@@ -1,12 +1,10 @@
-#include "interfaces.h"
-#include "../utils/errorutils.h"
+#include "capture.h"
+#include "../utils/utils.h"
 #include <netinet/in.h>
 #include <pcap.h>
-#include <pcap/pcap.h>
 #include <regex.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 typedef struct __InterfaceSpec
 {
@@ -18,7 +16,7 @@ typedef struct __InterfaceSpec
 } InterfaceSpec;
 
 #ifdef OSX
-struct  __attribute__((__packed__)) sockaddr_ll 
+struct __attribute__((__packed__)) sockaddr_ll
 {
     u_char dummy[11];
     u_char sll_addr[6];
@@ -31,8 +29,7 @@ struct  __attribute__((__packed__)) sockaddr_ll
 #include <linux/if_packet.h>
 
 #endif
-static void get_interface_addresses(pcap_addr_t *addressIterator,
-                                    InterfaceSpec *target)
+static void get_interface_addresses(pcap_addr_t *addressIterator, InterfaceSpec *target)
 {
     struct sockaddr_in *ipAddress;
     struct sockaddr_ll *macAddress;
@@ -49,7 +46,7 @@ static void get_interface_addresses(pcap_addr_t *addressIterator,
             memcpy(target->ip, &ipAddress->sin_addr, 4);
         }
         addressIterator = addressIterator->next;
-        if (*(u_int*)target->mac != 0l && *(u_int*)target->ip != 0l)
+        if (*(u_int *)target->mac != 0l && *(u_int *)target->ip != 0l)
         {
             break;
         }
@@ -72,7 +69,7 @@ static InterfaceSpec *get_all_interfaces()
     while (deviceIterator)
     {
         specIterator = (InterfaceSpec *)calloc(1, sizeof(InterfaceSpec));
-        memset(specIterator,0,sizeof(InterfaceSpec));
+        memset(specIterator, 0, sizeof(InterfaceSpec));
         if (previous)
         {
             previous->next = specIterator;
@@ -131,7 +128,7 @@ static void mac_to_bytes(char *mac_string, u_char *bytes)
     char error_string[] = "Mac address must be in the form  xx:xx:xx:xx:xx:xx";
     if (strlen(mac_string) != 17)
     {
-        error_wrapper(CONDITION_FAIL,error_string,NULL);
+        error_wrapper(CONDITION_FAIL, error_string, NULL);
     }
     char *token_string = (char *)malloc(17 + 1);
     memset(token_string, 0, 17 + 1);
@@ -140,32 +137,31 @@ static void mac_to_bytes(char *mac_string, u_char *bytes)
     char *token = strtok(token_string, ":");
     if (token == NULL)
     {
-       error_wrapper(CONDITION_FAIL,error_string,NULL);
+        error_wrapper(CONDITION_FAIL, error_string, NULL);
     }
     while (token != NULL)
     {
-        bytes[count++] =
-            (token[0] % 32 + 9) % 25 * 16 + (token[1] % 32 + 9) % 25;
+        bytes[count++] = (token[0] % 32 + 9) % 25 * 16 + (token[1] % 32 + 9) % 25;
         token = strtok(NULL, ":");
     }
     if (count != 6)
     {
-        error_wrapper(CONDITION_FAIL,error_string,NULL);
+        error_wrapper(CONDITION_FAIL, error_string, NULL);
     }
 }
 
 static pcap_t *build_capture_interface(InterfaceSpec *interface)
 {
-    pcap_t *handle =NULL;
+    pcap_t *handle = NULL;
     char errbuf[PCAP_ERRBUF_SIZE];
     handle = pcap_create(interface->name, errbuf);
-    error_wrapper(handle!=NULL,errbuf,NULL);
-    error_wrapper(pcap_set_snaplen(handle, 65535)==0,"Couldn't set snaplength",NULL);  
-    error_wrapper(pcap_set_promisc(handle, 0)==0, "Couldn't set promiscuous",NULL);
-    error_wrapper(pcap_set_immediate_mode(handle, 0)==0,"Couldn't set immediate mode",NULL); 
-    error_wrapper(pcap_set_timeout(handle, 2)==0, "Couldn't set timeout",NULL);
-    error_wrapper(pcap_setnonblock(handle, 1, errbuf)==0, errbuf ,NULL);
-   
+    error_wrapper(handle != NULL, errbuf, NULL);
+    error_wrapper(pcap_set_snaplen(handle, 65535) == 0, "Couldn't set snaplength", NULL);
+    error_wrapper(pcap_set_promisc(handle, 0) == 0, "Couldn't set promiscuous", NULL);
+    error_wrapper(pcap_set_immediate_mode(handle, 0) == 0, "Couldn't set immediate mode", NULL);
+    error_wrapper(pcap_set_timeout(handle, 2) == 0, "Couldn't set timeout", NULL);
+    error_wrapper(pcap_setnonblock(handle, 1, errbuf) == 0, errbuf, NULL);
+
     return handle;
 }
 
@@ -178,19 +174,19 @@ static void apply_capture_filter(pcap_t *handle, char *mac_string)
     memcpy(full_filter, base_filter, strlen(base_filter));
     char *copy_mac = &full_filter[strlen(base_filter)];
     memcpy(copy_mac, mac_string, strlen(mac_string));
-    error_wrapper(pcap_compile(handle, &fp, full_filter, 1, PCAP_NETMASK_UNKNOWN)==0,pcap_geterr(handle),NULL); 
-    error_wrapper(pcap_setfilter(handle, &fp)==0,"Could not apply filter to interface",NULL);
+    error_wrapper(pcap_compile(handle, &fp, full_filter, 1, PCAP_NETMASK_UNKNOWN) == 0, pcap_geterr(handle), NULL);
+    error_wrapper(pcap_setfilter(handle, &fp) == 0, "Could not apply filter to interface", NULL);
 }
 
 
-void setup_capture_spec(CaptureSpec *target, char *interface_regex,char *bind_mac)
+void get_capture_spec(CaptureSpec *target, char *interface_regex, char *bind_mac)
 {
-    
+
     InterfaceSpec interface_result;
-    error_wrapper(get_interface_by_regex(&interface_result, interface_regex), "Could not find interface",NULL);
-    mac_to_bytes(bind_mac,target->dest_mac);
-    memcpy(target->own_mac,interface_result.mac,6);
+    error_wrapper(get_interface_by_regex(&interface_result, interface_regex), "Could not find interface", NULL);
+    mac_to_bytes(bind_mac, target->dest_mac);
+    memcpy(target->own_mac, interface_result.mac, 6);
     target->capture_handle = build_capture_interface(&interface_result);
-    error_wrapper(pcap_activate(target->capture_handle)==0,"Couldn't activate capture interface",NULL);
-    apply_capture_filter(target->capture_handle,bind_mac);
+    error_wrapper(pcap_activate(target->capture_handle) == 0, "Couldn't activate capture interface", NULL);
+    apply_capture_filter(target->capture_handle, bind_mac);
 }

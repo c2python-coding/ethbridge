@@ -20,10 +20,11 @@ BUILD_DIR := ./build
 
 # Find all the C and C++ files we want to compile
 SOURCES = $(wildcard src/*.c) \
-		$(wildcard src/interfaces/*.c) \
+		$(wildcard src/capture/*.c) \
 		$(wildcard src/utils/*.c) \
 		$(wildcard src/forward/*.c) \
 		$(wildcard src/processing/*.c) \
+		$(wildcard src/handshake/*.c) \
 
 
 OBJECTS := $(SOURCES:%=$(BUILD_DIR)/%.o)
