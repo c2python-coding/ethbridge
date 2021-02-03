@@ -178,6 +178,13 @@ static void apply_capture_filter(pcap_t *handle, char *mac_string)
     error_wrapper(pcap_setfilter(handle, &fp) == 0, "Could not apply filter to interface", NULL);
 }
 
+void close_capture(CaptureSpec *target)
+{
+    if (target->capture_handle != NULL)
+    {
+        pcap_close(target->capture_handle);
+    }
+}
 
 void get_capture_spec(CaptureSpec *target, char *interface_regex, char *bind_mac)
 {

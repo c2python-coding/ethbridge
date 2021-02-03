@@ -31,6 +31,8 @@ typedef struct
     LocalCommsConfig comms_config;
 } ForwardFileDescriptors;
 
+void disconnect_sockets(ForwardFileDescriptors *forward_info);
+
 void connect_sockets(ForwardFileDescriptors *forward_info);
 
 

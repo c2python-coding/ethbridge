@@ -82,6 +82,24 @@ static void split_socket_spec(LocalCommsConfig *config, char *config_str)
 }
 
 
+void disconnect_sockets(ForwardFileDescriptors *forward_info)
+{
+    int r_fd = forward_info->read_fd;
+    int w_fd = forward_info->write_fd;
+    if (forward_info->read_fd > 2)
+    {
+        shutdown(forward_info->read_fd,SHUT_RDWR);
+        close(forward_info->read_fd);
+    }
+    if (forward_info->write_fd> 2 && (r_fd != w_fd))
+    {
+        shutdown(forward_info->write_fd,SHUT_RDWR);
+        close(forward_info->write_fd);
+    }
+}
+
+
+
 void connect_sockets(ForwardFileDescriptors *forward_info)
 {
     struct sockaddr_in address;
@@ -143,10 +161,8 @@ void get_forwarding_spec(ForwardFileDescriptors *forward_info, char *capture_spe
 {
     forward_info->read_fd = -1;
     forward_info->write_fd = -1;
-
- 
-
     split_socket_spec(&forward_info->comms_config, capture_spec_string);
     validate_config(&forward_info->comms_config);
     
 }
+

@@ -1,6 +1,7 @@
 #include "forward/forward.h"
 #include "capture/capture.h"
 #include "processing/processing.h"
+#include "handshake/handshake.h"
 #include "utils/easyprint.h"
 #include "utils/utils.h"
 #include <net/if.h>
@@ -35,24 +36,13 @@ static void ctrl_c_handler(int sitnalnum) {
     abort_process_loop();
     }
 
-//TODO move this to respective modules and register the cleanup functions
-static void clean_connections()
+
+void clean_connections()
 {
-    if (capture_interface.capture_handle != NULL)
-    {
-        pcap_close(capture_interface.capture_handle);
-    }
-    if (forward_fds.read_fd > 2)
-    {
-        shutdown(forward_fds.read_fd,SHUT_RDWR);
-        close(forward_fds.read_fd);
-    }
-    if (forward_fds.write_fd > 2)
-    {
-        shutdown(forward_fds.write_fd,SHUT_RDWR);
-        close(forward_fds.write_fd);
-    }
+    close_capture(&capture_interface);
+    disconnect_sockets(&forward_fds);
 }
+
 
 void error_handler(char *message, void *user)
 {
@@ -66,14 +56,6 @@ void error_handler(char *message, void *user)
 }
 
 
-void launch_bridge()
-{
-    struct sigaction ctrlc_action;
-    memset(&ctrlc_action, 0, sizeof(struct sigaction));
-    ctrlc_action.sa_handler = &ctrl_c_handler;
-    error_wrapper(sigaction(SIGINT, &ctrlc_action, NULL) == 0, "couldn't register ctrl-c handler", NULL);
-    
-}
 
 int main(int argc, char **argv)
 {
@@ -117,6 +99,13 @@ int main(int argc, char **argv)
     error_wrapper(specifed_flags == REQUIRED_FLAGS, USAGE_STR, NULL);
     get_capture_spec(&capture_interface, interface_regex, mac_string);
     get_forwarding_spec(&forward_fds, forward_spec);
+    establish_handshake(&capture_interface,&forward_fds);
+
+    struct sigaction ctrlc_action;
+    memset(&ctrlc_action, 0, sizeof(struct sigaction));
+    ctrlc_action.sa_handler = &ctrl_c_handler;
+    error_wrapper(sigaction(SIGINT, &ctrlc_action, NULL) == 0, "couldn't register ctrl-c handler", NULL);
+
     start_process_loop(&capture_interface,&forward_fds);
     clean_connections();
     simple_log("Done");
