@@ -29,10 +29,12 @@ void abort_process_loop()
 static void packet_callback(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
 {
     ether_header_ptr packet_header = (ether_header_ptr)bytes;
-    const u_char *data = bytes + ETHER_HDR_LEN;
-    int data_len = (h->caplen) - ETHER_HDR_LEN;
+    const u_char *data;
+    int data_len;
     if (packet_header->ether_type == CUSTOM_ETHER_PROTOCOL)
     {
+        data = bytes + ETHER_HDR_LEN;
+        data_len = (h->caplen) - ETHER_HDR_LEN;
         write(fds->write_fd, (void *)data, data_len);
     }
 }
