@@ -13,9 +13,9 @@
 
 typedef enum
 {
-    INIT = 0,
+    ERROR = 0,
     PINGING = 1,
-    LOCAL_COMMS = 2,
+    FORWARD_READY = 2,
     CONFIRMATION = 3,
     DONE = 4
 
@@ -24,7 +24,6 @@ typedef enum
 static volatile HandshakeState own_state;
 
 static CaptureSpec *capture = NULL;
-static ForwardFileDescriptors *local_fds = NULL;
 
 static u_char packet_buffer[ETHER_HDR_LEN + 1];
 static u_char *data = packet_buffer + ETHER_HDR_LEN;
@@ -44,13 +43,13 @@ static void handshake_callback(u_char *user, const struct pcap_pkthdr *h, const 
     HandshakeState recieved_state;
     HandshakeState look_for = (HandshakeState)(*user);
     if (ntohs(packet_header->ether_type) == HANDSHAKE_ETHER_PROTOCOL)
-    {  
-        recieved_state = (HandshakeState)(*(bytes+ETHER_HDR_LEN));
+    {
+        recieved_state = (HandshakeState)(*(bytes + ETHER_HDR_LEN));
         if (recieved_state == look_for)
         {
             remote_match = 1;
+            send_state(look_for);
         }
-       
     }
 }
 
@@ -58,37 +57,43 @@ void establish_handshake(CaptureSpec *capture_interface, ForwardFileDescriptors 
 {
     assert(capture_interface->capture_handle != NULL);
     capture = capture_interface;
-    local_fds = forward_fds;
     prepare_response_buffer(packet_buffer, capture_interface->own_mac, capture_interface->dest_mac, HANDSHAKE_ETHER_PROTOCOL);
-    own_state = INIT;
     char message[30];
-    memset(message,0,30);
-    while (own_state != DONE)
+    memset(message, 0, 30);
+
+    own_state = PINGING;
+    strcpy(message, "Sending Ping");
+    remote_match = 0;
+    do
     {
-        switch (own_state)
-        {
-        case INIT:
-            own_state = PINGING;
-            strcpy(message,"sending ping");
-            break;
-        case PINGING:
-        case LOCAL_COMMS:
-        case CONFIRMATION:
-        case DONE:
-        default:
-            break;
-        }
         if (timer_check(HANDSHAKE_MS_WAIT))
         {
+            simple_log(message);
             send_state(own_state);
             timer_start();
         }
-        remote_match = 0;
-        while (remote_match == 0)
+        pcap_dispatch(capture->capture_handle, 0, &handshake_callback, (u_char *)(&own_state));
+        if (remote_match)
         {
-            pcap_dispatch(capture->capture_handle, 0, &handshake_callback, (u_char*)(&own_state));
+            switch (own_state)
+            {
+            case PINGING:
+                own_state = FORWARD_READY;
+                simple_log("Establishing Local Forwarding");
+                connect_sockets(forward_fds);
+                strcpy(message, "Sending Forward Ready");
+                break;
+            case FORWARD_READY:
+                own_state = CONFIRMATION;
+                strcpy(message, "Sending Final Confirm");
+            case CONFIRMATION:
+                own_state = DONE;
+            case DONE:
+            default:
+                break;
+            }
+            remote_match = 0;
         }
-       
-    }
+    }while (own_state != DONE);
     simple_log("Handshake Complete");
 }
