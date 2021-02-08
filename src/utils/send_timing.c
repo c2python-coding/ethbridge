@@ -5,7 +5,6 @@
 static struct timeval last_time;
 volatile static int running = 0;
 
-
 static long convert_to_microseconds(struct timeval *input)
 {
     return ((long)input->tv_sec *1000000l + (long)input->tv_usec);
@@ -30,8 +29,6 @@ void timer_stop()
 {
     running = 0;
 }
-
-
 
 void timer_wait(long milliseconds)
 {
@@ -60,5 +57,4 @@ int timer_check(long milliseconds)
         return 0;
     }
     return 1;
-
 }

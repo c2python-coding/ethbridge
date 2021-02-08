@@ -8,7 +8,6 @@
 #define CONDITION_SUCCEED 1
 
 
-
 typedef struct ether_header *ether_header_ptr;
 
 void error_wrapper(int condition, const char *message, void* user);

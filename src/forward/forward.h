@@ -35,8 +35,6 @@ void disconnect_sockets(ForwardFileDescriptors *forward_info);
 
 void connect_sockets(ForwardFileDescriptors *forward_info);
 
-
 void get_forwarding_spec(ForwardFileDescriptors *forward_info, char* capture_spec_string);
-
 
 #endif

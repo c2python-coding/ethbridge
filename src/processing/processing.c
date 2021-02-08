@@ -15,8 +15,6 @@
 
 volatile int PROCESS_LOOP_CONTINUE = 1;
 
-
-
 static u_char packet_buffer[ETHER_HDR_LEN + ETH_DATA_LEN];
 static u_char *const data_ptr = packet_buffer + ETHER_HDR_LEN;
 static ForwardFileDescriptors *fds;

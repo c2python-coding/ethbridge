@@ -16,6 +16,3 @@ void close_capture(CaptureSpec * target);
 void get_capture_spec(CaptureSpec * target, char* interface_regex, char* bind_mac);
 
 #endif
-
-
-
