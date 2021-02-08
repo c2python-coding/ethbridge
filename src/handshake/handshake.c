@@ -94,6 +94,6 @@ void establish_handshake(CaptureSpec *capture_interface, ForwardFileDescriptors 
             }
             remote_match = 0;
         }
-    }while (own_state != DONE);
+    } while (own_state != DONE);
     simple_log("Handshake Complete");
 }

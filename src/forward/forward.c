@@ -165,4 +165,3 @@ void get_forwarding_spec(ForwardFileDescriptors *forward_info, char *capture_spe
     validate_config(&forward_info->comms_config);
     
 }
-

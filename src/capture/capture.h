@@ -8,11 +8,11 @@ typedef struct __CaptureSpec
 {
     u_char own_mac[6];
     u_char dest_mac[6];
-    pcap_t* capture_handle;
+    pcap_t *capture_handle;
 } CaptureSpec;
 
-void close_capture(CaptureSpec * target);
+void close_capture(CaptureSpec *target);
 
-void get_capture_spec(CaptureSpec * target, char* interface_regex, char* bind_mac);
+void get_capture_spec(CaptureSpec *target, char *interface_regex, char *bind_mac);
 
 #endif
