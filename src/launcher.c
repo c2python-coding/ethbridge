@@ -1,8 +1,9 @@
 #include "forward/forward.h"
-#include "interfaces/interfaces.h"
+#include "capture/capture.h"
 #include "processing/processing.h"
+#include "handshake/handshake.h"
 #include "utils/easyprint.h"
-#include "utils/errorutils.h"
+#include "utils/utils.h"
 #include <net/if.h>
 #include <pcap.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
+#include <signal.h>
 
 
 
@@ -30,24 +32,17 @@ static const char *USAGE_STR = "Usage: ethbridge -i interface, -m mac_address, -
 CaptureSpec capture_interface;
 ForwardFileDescriptors forward_fds;
 
-//TODO move this to respective modules and register the cleanup functions
+static void ctrl_c_handler(int sitnalnum) { 
+    abort_process_loop();
+    }
+
+
 void clean_connections()
 {
-    if (capture_interface.capture_handle != NULL)
-    {
-        pcap_close(capture_interface.capture_handle);
-    }
-    if (forward_fds.read_fd > 2)
-    {
-        shutdown(forward_fds.read_fd,SHUT_RDWR);
-        close(forward_fds.read_fd);
-    }
-    if (forward_fds.write_fd > 2)
-    {
-        shutdown(forward_fds.write_fd,SHUT_RDWR);
-        close(forward_fds.write_fd);
-    }
+    close_capture(&capture_interface);
+    disconnect_sockets(&forward_fds);
 }
+
 
 void error_handler(char *message, void *user)
 {
@@ -59,6 +54,8 @@ void error_handler(char *message, void *user)
     clean_connections();
     exit(1);
 }
+
+
 
 int main(int argc, char **argv)
 {
@@ -100,10 +97,17 @@ int main(int argc, char **argv)
         }
     }
     error_wrapper(specifed_flags == REQUIRED_FLAGS, USAGE_STR, NULL);
-    setup_capture_spec(&capture_interface, interface_regex, mac_string);
-    setup_forward_connection(&forward_fds, forward_spec);
-    start_loop(&capture_interface,&forward_fds);
+    get_capture_spec(&capture_interface, interface_regex, mac_string);
+    get_forwarding_spec(&forward_fds, forward_spec);
+    establish_handshake(&capture_interface,&forward_fds);
+
+    struct sigaction ctrlc_action;
+    memset(&ctrlc_action, 0, sizeof(struct sigaction));
+    ctrlc_action.sa_handler = &ctrl_c_handler;
+    error_wrapper(sigaction(SIGINT, &ctrlc_action, NULL) == 0, "couldn't register ctrl-c handler", NULL);
+
+    start_process_loop(&capture_interface,&forward_fds);
     clean_connections();
-    fprintf(stderr, "=>Done\n");
+    simple_log("Done");
     return 0;
 }

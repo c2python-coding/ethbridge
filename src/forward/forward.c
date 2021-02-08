@@ -1,5 +1,5 @@
 #include "forward.h"
-#include "../utils/errorutils.h"
+#include "../utils/utils.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
@@ -11,27 +11,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-typedef enum
-{
-    NONE = 0,
-    STDIO = 1,
-    TCP = 2,
-    UDP = 3
-} LocalCommsType;
 
-typedef enum
-{
-    NA = 0,
-    LISTEN = 1,
-    CONNECT = 2
-} InitType;
-
-typedef struct
-{
-    LocalCommsType comms_type;
-    InitType init_type;
-    u_short port;
-} LocalCommsConfig;
 
 static const char *generic_error_string = "Output specification must be either STDIO, TCP:[L,H]:[port] or UDP:[port]";
 
@@ -102,11 +82,26 @@ static void split_socket_spec(LocalCommsConfig *config, char *config_str)
 }
 
 
-void setup_forward_connection(ForwardFileDescriptors *forward_info, char *capture_spec_string)
+void disconnect_sockets(ForwardFileDescriptors *forward_info)
 {
-    LocalCommsConfig output_config;
-    forward_info->read_fd = -1;
-    forward_info->write_fd = -1;
+    int r_fd = forward_info->read_fd;
+    int w_fd = forward_info->write_fd;
+    if (forward_info->read_fd > 2)
+    {
+        shutdown(forward_info->read_fd,SHUT_RDWR);
+        close(forward_info->read_fd);
+    }
+    if (forward_info->write_fd> 2 && (r_fd != w_fd))
+    {
+        shutdown(forward_info->write_fd,SHUT_RDWR);
+        close(forward_info->write_fd);
+    }
+}
+
+
+
+void connect_sockets(ForwardFileDescriptors *forward_info)
+{
     struct sockaddr_in address;
     struct sockaddr_in comm_address;
     u_int address_size = sizeof(address);
@@ -115,37 +110,34 @@ void setup_forward_connection(ForwardFileDescriptors *forward_info, char *captur
     int comm_socket =- 1;
     int option;
 
-
-    split_socket_spec(&output_config, capture_spec_string);
-    validate_config(&output_config);
-    if (output_config.comms_type == STDIO)
+    if (forward_info->comms_config.comms_type == STDIO)
     {
         forward_info->read_fd = STDIN_FILENO;
         flags = fcntl(forward_info->read_fd, F_GETFL, 0);
         error_wrapper(fcntl(forward_info->read_fd, F_SETFL, flags | O_NONBLOCK) == 0, "Could not set stdin to nonblock", NULL);
         forward_info->write_fd = STDOUT_FILENO;
+        simple_log("STDIN/STDOUT connected");
         return;
     }
     address.sin_family = AF_INET;
-    address.sin_port = htons(output_config.port);
-    if (output_config.comms_type == TCP)
+    address.sin_port = htons(forward_info->comms_config.port);
+    if (forward_info->comms_config.comms_type == TCP)
     {
         error_wrapper(inet_pton(AF_INET, "127.0.0.1", &address.sin_addr)>0,"Could not set socket address",NULL);
         socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         error_wrapper(socket_fd >2, "Could not create socket", NULL);
         option = 1;
         error_wrapper(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option))==0, "Could not set addr to nonblock", NULL);
-        if (output_config.init_type == LISTEN)
-        {
-           
+        if (forward_info->comms_config.init_type == LISTEN)
+        {    
             error_wrapper(bind(socket_fd, (struct sockaddr *)&address, address_size) == 0, "Could not bind tcp socket", NULL);
             error_wrapper(listen(socket_fd, 1) == 0, "Could not start socket in listen mode", NULL);
-            fprintf(stderr, "=>Waiting for tcp connection....\n");
+            simple_log("Waiting for tcp connection....");
             comm_socket = accept(socket_fd, (struct sockaddr *)&comm_address, &address_size);
             error_wrapper(comm_socket > 2, "Could not accept incoming connection", NULL);
             close(socket_fd);
         }
-        else if (output_config.init_type == CONNECT)
+        else if (forward_info->comms_config.init_type == CONNECT)
         {
             comm_socket = socket_fd;
             error_wrapper(connect(comm_socket, (struct sockaddr *)&address, address_size)==0,"Could not connect socket", NULL);
@@ -157,7 +149,19 @@ void setup_forward_connection(ForwardFileDescriptors *forward_info, char *captur
     }
     else
     {
-        assert(output_config.comms_type == UDP);
+        assert(forward_info->comms_config.comms_type == UDP);
         error_wrapper(0, "Sorry UDP is not implemented yet", NULL); // TODO
     }
+    simple_log("Local sockets connected");
+}
+
+
+
+void get_forwarding_spec(ForwardFileDescriptors *forward_info, char *capture_spec_string)
+{
+    forward_info->read_fd = -1;
+    forward_info->write_fd = -1;
+    split_socket_spec(&forward_info->comms_config, capture_spec_string);
+    validate_config(&forward_info->comms_config);
+    
 }

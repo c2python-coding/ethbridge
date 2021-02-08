@@ -1,8 +1,9 @@
-#include "errorutils.h"
+#include "utils.h"
 #include "easyprint.h"
 #include <pcap.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #define ETHBRIDGE_ERROR_BUFFER_LEN PCAP_ERRBUF_SIZE
 
@@ -12,6 +13,7 @@ static void (*error_function)(char*, void*) = NULL;
 
 void error_wrapper(int condition, const char *message, void *user)
 {
+    assert(error_function != NULL);
     if (!condition)
     {
         strncpy(ETHBRIDGE_ERROR_BUFFER, message, ETHBRIDGE_ERROR_BUFFER_LEN);
