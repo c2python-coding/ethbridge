@@ -18,6 +18,8 @@ void prepare_response_buffer(u_char* buffer, u_char* source_mac, u_char* dest_ma
 
 void simple_log(char *log_string);
 
+void enable_logging();
+
 void timer_start();
 
 void timer_stop();

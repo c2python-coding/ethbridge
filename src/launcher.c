@@ -24,10 +24,12 @@ static const int MAC_FILTER_SIZE = 18;
 
 static const int FORWARD_SPEC_SIZE = 12;
 
-static const char *USAGE_STR = "Usage: ethbridge -i interface, -m mac_address, -o output_spec\n\
+static const char *USAGE_STR = "Usage: ethbridge -i interface, -m mac_address, -o output_spec [-d]\n\
   interface: regex of the interface to use\n\
   mac_address: mac address of the other end of the bridge\n\
-  output_spec: output specification [STDIO,TCP,UDP]:[C,L]:[PORT]\n";
+  output_spec: output specification [STDIO,TCP,UDP]:[C,L]:[PORT]\n\
+  -d: optional debug flag\n";
+
 
 CaptureSpec capture_interface;
 ForwardFileDescriptors forward_fds;
@@ -75,7 +77,7 @@ int main(int argc, char **argv)
     memset(forward_spec, 0, FORWARD_SPEC_SIZE);
 
     char specifed_flags = 0;
-    while ((opt = getopt(argc, argv, "i:m:o:")) != -1)
+    while ((opt = getopt(argc, argv, "i:m:o:d")) != -1)
     {
         switch (opt)
         {
@@ -90,6 +92,9 @@ int main(int argc, char **argv)
         case 'o':
             strncpy(forward_spec, optarg, FORWARD_SPEC_SIZE - 1);
             specifed_flags = (specifed_flags | OUTPUT_FLAG);
+            break;
+        case 'd':
+            enable_logging();
             break;
         default:
             print(USAGE_STR);
